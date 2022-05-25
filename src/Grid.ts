@@ -14,10 +14,12 @@ interface GridOptions {
 class Grid {
   id:string
 
-  sizeX = 100
-  sizeY = 100
+  sizeX = 25
+  sizeY = 25
   chanceOfSpawningWootGumpIn1000 = 1
   currentSeed:string
+
+  warriors?: Warrior[]
 
   tick = 0
   // 2x2 array of locations
@@ -65,6 +67,7 @@ class Grid {
         this.grid[x][y] = new Cell({x, y, grid: this})
       }
     }
+    this.warriors = warriors
     warriors.forEach((warrior) => {
       this.grid[deterministicRandom(this.sizeX, `grid-${warrior.id}-x`, this.currentSeed)][deterministicRandom(this.sizeY, `grid-${warrior.id}-y`, this.currentSeed)].addWarrior(warrior)
     })
