@@ -58,39 +58,44 @@ class Cell {
     this.harvest()
   }
 
-  doMovement(tick: number, seed:string) {
+  doMovement(_tick: number, _seed:string) {
     const movers = this.nonBattlingWarriors()
     movers.forEach((warrior) => {
-      if (warrior.destination) {
-        throw new Error('destination not yet supported')
+      if (!warrior.destination || this.hasWarriorArrived(warrior)) {
+        warrior.setRandomDestination(this.grid)
       }
-      const newCell = this.grid.grid[this.x + this.randomX(warrior, tick, seed)][this.y + this.randomY(warrior, tick, seed)]
+      const newCell = this.grid.grid[this.x + this.deltaX(warrior.destination![0])][this.y + this.deltaY(warrior.destination![1])]
       this.outgoing.push(warrior)
       this.log(`${warrior.name} moves to ${newCell.x} ${newCell.y}`)
       newCell.incoming.push(warrior)
     })
   }
 
-  private randomX(warrior:Warrior, tick: number, seed:string):number {
-    switch(this.x) {
-      case 0:
-        return 1
-      case (this.grid.sizeX - 1):
-        return -1
-      default:
-        return this.rand(3, tick, seed, `${warrior.id}-x`) - 1 // this makes it -1,0,1
+  private deltaX(x:number) {
+    if (x == this.x) {
+      return 0
     }
+    if (x > this.x) {
+      return 1
+    }
+    return -1
   }
 
-  private randomY(warrior:Warrior, tick: number, seed:string):number {
-    switch(this.y) {
-      case 0:
-        return 1
-      case (this.grid.sizeY - 1):
-        return -1
-      default:
-        return this.rand(3, tick, seed, `${warrior.id}-y`) - 1 // this makes it -1,0,1
+  private deltaY(y:number) {
+    if (y == this.y) {
+      return 0
     }
+    if (y > this.y) {
+      return 1
+    }
+    return -1
+  }
+
+  private hasWarriorArrived(warrior:Warrior) {
+    if (!warrior.destination) {
+      return false
+    }
+    return warrior.destination[0] == this.x && warrior.destination[1] == this.y
   }
 
   private harvest() {

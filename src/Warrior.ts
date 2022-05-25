@@ -1,3 +1,6 @@
+import Grid from "./Grid"
+import { deterministicRandom } from "./random"
+
 interface WarriorStats {
   id: string
   name:string
@@ -34,6 +37,12 @@ class Warrior implements WarriorStats {
   // amount to add to halth as a decimal percentage (ie 0.10 is 10%) of initialHealth
   recover(percentage:number) {
     this.currentHealth = Math.min(this.initialHealth, this.initialHealth * percentage)
+  }
+
+  setRandomDestination(grid:Grid) {
+    const x = deterministicRandom(grid.sizeX, `${this.id}-destX-${grid.tick}`, grid.currentSeed)
+    const y = deterministicRandom(grid.sizeY, `${this.id}-destY-${grid.tick}`, grid.currentSeed)
+    this.destination = [x,y]
   }
 
 }
