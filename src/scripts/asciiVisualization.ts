@@ -20,7 +20,7 @@ function generateFakeWarriors(count:number, seed:string) {
 
 async function main() {
   const seed = 'ticks-2'
-  const warriors = generateFakeWarriors(20, seed)
+  const warriors = generateFakeWarriors(10, seed)
   const grid = new Grid({ warriors, seed })
 
 
@@ -54,7 +54,7 @@ async function main() {
       // , height: '40%'
       , border: {type: "line", fg: "cyan"}
       , columnSpacing: 2
-      , columnWidth: [15, 6, 6]})
+      , columnWidth: [15, 15, 6]})
 
   // gridTable.focus()
   // screen.append(gridTable)

@@ -36,7 +36,7 @@ class Warrior implements WarriorStats {
 
   // amount to add to halth as a decimal percentage (ie 0.10 is 10%) of initialHealth
   recover(percentage:number) {
-    this.currentHealth = Math.min(this.initialHealth, this.initialHealth * percentage)
+    this.currentHealth = Math.min(this.initialHealth, this.currentHealth + this.initialHealth * percentage)
   }
 
   setRandomDestination(grid:Grid) {
