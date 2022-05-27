@@ -1,10 +1,25 @@
 import Grid from "./Grid"
 import { deterministicRandom } from "./random"
 import Warrior from "./Warrior"
+import Wootgump from './Wootgump'
 import debug from 'debug'
-import Battle from "./Battle"
+import Battle, { BattleTickReport } from "./Battle"
 
 const log = debug('Cell')
+
+// warriorID is the index in these next two types
+type HarvestReport = {[index: string]: Wootgump[]}
+type RejuvanizeReport = {[index: string]: number}
+
+
+interface CellOutComeDescriptor {
+  incoming: Warrior[]
+  outgoing: Warrior[]
+  spawned: Wootgump[]
+  harvested: HarvestReport
+  battleTicks: BattleTickReport[]
+  rejuvanized: RejuvanizeReport
+}
 
 
 interface CellInitializeOptions {
@@ -19,7 +34,7 @@ class Cell {
   incoming:Warrior[] = []
 
   battles:Battle[] = []
-  wootgump:number = 0
+  wootgump:Wootgump[] = []
 
   grid:Grid
   x:number
@@ -35,7 +50,16 @@ class Cell {
     this.warriors.push(warrior)
   }
 
-  handleOutcomes(tick:number, seed:string) {
+  handleOutcomes(tick:number, seed:string):CellOutComeDescriptor {
+    const descriptor:CellOutComeDescriptor = {
+      incoming: this.incoming,
+      outgoing: this.outgoing,
+      spawned: [],
+      harvested: {},
+      battleTicks: [],
+      rejuvanized: {},
+    }
+
     this.warriors = this.warriors.filter((w) => {
       return !this.outgoing.includes(w)
     })
@@ -45,17 +69,22 @@ class Cell {
     })
     this.incoming = []
 
-    this.maybeSpawnWootgump(tick, seed)
+    const gumpSpawned = this.maybeSpawnWootgump(tick, seed)
+    if (gumpSpawned) {
+      descriptor.spawned.push(gumpSpawned)
+    }
     this.maybeSetupBattle(tick, seed)
     if (this.battles.length > 0) {
      this.battles.forEach((b) => {
-       b.doBattleTick(tick, seed)
+       descriptor.battleTicks.push(b.doBattleTick(tick, seed))
      })
      this.battles = this.battles.filter((b) => !b.isOver())
     } else {
-      this.rejuvanize()
+      descriptor.rejuvanized = this.rejuvanize()
     }
-    this.harvest()
+    descriptor.harvested = this.harvest()
+
+    return descriptor
   }
 
   doMovement(_tick: number, _seed:string) {
@@ -98,17 +127,25 @@ class Cell {
     return warrior.destination[0] == this.x && warrior.destination[1] == this.y
   }
 
-  private harvest() {
+  private harvest():HarvestReport {
     const harvesters = this.nonBattlingWarriors()
     if (harvesters.length == 0) {
-      return
+      return {}
     }
     let i = 0
-    while (this.wootgump > 0) {
-      this.wootgump -= 1
-      harvesters[i % harvesters.length].wootgumpBalance += 1
+    let harvestReport:HarvestReport = {}
+    while (this.wootgump.length > 0) {
+      const wootgump = this.wootgump.pop()
+      if (!wootgump) {
+        throw new Error('no wootgump found')
+      }
+      const harvestor = harvesters[i % harvesters.length]
+      harvestReport[harvestor.id] = harvestReport[harvestor.id] || []
+      harvestReport[harvestor.id].push(wootgump)
+      harvestor.wootgumpBalance += 1
       i++
     }
+    return harvestReport
   }
 
   private maybeSetupBattle(tick: number, seed: string) {
@@ -140,15 +177,21 @@ class Cell {
     }
     // if there isn't a battle going on then the wootgump can restore the health of warriors
     // TODO: we can make this way more complicated if we want with nearby wootgump, etc... for now it's 10%
-    this.warriors.filter((w) => w.recover(0.10))
+    return this.warriors.reduce((healthIncreases, w) => {
+      healthIncreases[w.id] = w.recover(0.10)
+      return healthIncreases
+    }, {} as RejuvanizeReport)
   }
 
   private maybeSpawnWootgump(tick:number, seed:string) {
     const wootGumpRoll = this.rand(1000, tick, seed)
     if (wootGumpRoll <= this.grid.chanceOfSpawningWootGumpIn1000) {
       this.log('adding wootgump')
-      this.wootgump++
+      const wootgump = new Wootgump()
+      this.wootgump.push(wootgump)
+      return wootgump
     }
+    return null
   }
 
   private rand(max: number, tick:number, seed:string, extraId = '') {

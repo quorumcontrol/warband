@@ -10,6 +10,17 @@ interface BattleOptions {
   seed: string
 }
 
+export interface BattleTickReport {
+  id: string
+  attacker: Warrior
+  defender: Warrior
+  attackRoll: number
+  defenseRoll: number
+  isOver: boolean
+  winner?: Warrior
+  loser?: Warrior
+}
+
 const WOOTGUMP_TAKE_PERCENTAGE = 0.5
 
 class Battle {
@@ -24,7 +35,7 @@ class Battle {
     this.tick = opts.startingTick
   }
 
-  doBattleTick(tick: number, seed: string) {
+  doBattleTick(tick: number, seed: string):BattleTickReport {
     this.tick = tick
     this.seed = seed
     const { attacker, defender } = this.getPositions()
@@ -42,18 +53,28 @@ class Battle {
       this.loser()!.wootgumpBalance -= wootGumpToTake
       this.winner()!.wootgumpBalance += wootGumpToTake
     }
+    return {
+      id: this.battleId(),
+      attacker,
+      defender,
+      attackRoll,
+      defenseRoll,
+      isOver: this.isOver(),
+      winner: this.winner(),
+      loser: this.loser(),
+    }
   }
 
   winner() {
     if (!this.isOver()) {
-      throw new Error('not over yet')
+      return undefined
     }
     return this.warriors.find((w) => w.isAlive())
   }
 
   loser() {
     if (!this.isOver()) {
-      throw new Error('not over yet')
+      return undefined
     }
     return this.warriors.find((w) => w.isAlive())
   }
